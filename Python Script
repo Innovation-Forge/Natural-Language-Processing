@@ -1,0 +1,90 @@
+# Import necessary libraries from NLTK for text processing and additional libraries for data display and manipulation
+import nltk
+from nltk import FreqDist, ConcordanceIndex
+from nltk.corpus.reader.plaintext import PlaintextCorpusReader
+from prettytable import PrettyTable
+import textwrap
+import io
+import sys
+
+# Automatically download essential NLTK resources for tokenizing text
+nltk.download('punkt')
+
+# Define a function that prepares the text data from files stored in a specified directory
+def load_corpus(corpus_root):
+    # Initialize a reader that processes plain text files and interpret them as a corpus (a large collection of text)
+    return PlaintextCorpusReader(corpus_root, '.*\.txt')
+
+# Define a function to perform initial analysis on the corpus
+def analyze_corpus(corpus):
+    # Tokenize the text, which means breaking it down into words and punctuation
+    tokens = corpus.words()
+    # Calculate how frequently each token appears in the text
+    fdist = FreqDist(tokens)
+    # Create a new Text object that makes it easier to perform additional analyses on the text
+    text = nltk.Text(tokens)
+    # Prepare an index to find the context where words appear in the text
+    concord_index = ConcordanceIndex(text.tokens)
+    
+    # Output the basic statistics about the corpus to give an overview of the text
+    print("\nCorpus Statistics:")
+    print("-------------------")
+    print(f"Corpus Length: {len(text)}")
+    print(f"Number of Word Tokens: {len(tokens)}")
+    print(f"Size of Vocabulary: {len(set(tokens))}\n")
+    
+    return text, fdist, concord_index
+
+# Define a function to help format long strings of text to fit within a certain width on screen
+def wrap_text(text, width=80):
+    return "\n".join(textwrap.wrap(text, width))
+
+# Define a function to capture the output of NLTK's similar() method, which is usually printed directly to the console
+def capture_similar_words(text, word):
+    # Temporarily redirect the output (usually printed to the console) to a string object
+    old_stdout = sys.stdout
+    sys.stdout = io.StringIO()
+    text.similar(word)
+    output = sys.stdout.getvalue()
+    sys.stdout = old_stdout
+    return output.strip()
+
+# Define a function to print detailed analysis of certain words in the corpus
+def print_detailed_analysis(text, fdist, concord_index):
+    # List of specific words to analyze
+    test_words = ['GLOVE', 'GUN', 'BRONCO', 'BLOOD', 'GUILTY']
+    # Initialize a table with headers to display data neatly
+    table = PrettyTable(["Word", "Occurrences", "Similar Words"])
+    for word in test_words:
+        # Count how many times each word appears
+        occurrence = fdist[word.upper()]
+        # Get a list of words that appear in similar contexts
+        similar_words = capture_similar_words(text, word)
+        # Add the data for each word to the table
+        table.add_row([word, occurrence, similar_words])
+    
+    # Print the table
+    print("Word Details:")
+    print("-------------")
+    print(table)
+    
+    # For each word, print all instances where the word appears with some context
+    for word in test_words:
+        print(f"\nConcordances for '{word}':")
+        concordance_lines = text.concordance_list(word, width=80, lines=len(text.tokens))
+        for line in concordance_lines:
+            print(wrap_text(line.line))
+
+# Define the main function that orchestrates loading the corpus, analyzing it, and printing the analysis
+def main():
+    # Specify the directory where the text data is stored
+    corpus_root = 'C:\\Users\\james\\CORPUS'
+    # Load and analyze the corpus
+    corpus = load_corpus(corpus_root)
+    text, fdist, concord_index = analyze_corpus(corpus)
+    # Display the detailed analysis
+    print_detailed_analysis(text, fdist, concord_index)
+
+# Execute the main function when this script is run directly, not when imported as a module
+if __name__ == "__main__":
+    main()
